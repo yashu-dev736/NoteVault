@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="bg-container">
+            <header class="top">
+
+<nav class="navbar bg-body-tertiary">
+  <div class="container-fluid">
+    <a class="navbar-brand"><img src="logo.png" alt="Logo" width="80" height="80"/> <b>NOTE VAULT</b></a>
+    <form class="d-flex" role="search">
+      <input id="searchInput" class="form-control me-2" type="search" placeholder="Search notes..." aria-label="Search">
+      <button class="btn btn-outline-success" onclick="showNoteModal()" type="button"><b> + New Note</b></button>
+      <button class="btn btn-outline-secondary ms-2" onclick="exportNotes()" type="button">Export</button>
+    </form>
+  </div>
+</nav>
+    </header>
+<div class="middle">
+    <h3> Categories </h3>
+<button class="click">All</button>
+    <div class="inserting d-flex flex-row justify-content-start">
+<i class="fa-regular fa-pen-to-square"></i>
+<h3 class="heading"> You haven't added any notes yet. Create one to get started!</h3>
+    </div>
+</div>
+<div id="sectionDetails">
+   
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="noteModalLabel">New Note</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="noteForm">
+        <input type="hidden" id="noteId">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="noteTitle" class="form-label">Title</label>
+            <input type="text" class="form-control" id="noteTitle" required>
+          </div>
+          <div class="mb-3">
+            <label for="noteContent" class="form-label">Content</label>
+            <textarea class="form-control" id="noteContent" rows="4" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'notes:v1';
+
+  function showNoteModal(editId) {
+    const modalEl = document.getElementById('noteModal');
+    const modalTitle = document.getElementById('noteModalLabel');
+    const hiddenId = document.getElementById('noteId');
+    if (editId) {
+      // populate fields for edit
+      const notes = getNotesFromStorage();
+      const note = notes.find(n => n.id === editId);
+      if (note) {
+        document.getElementById('noteTitle').value = note.title;
+        document.getElementById('noteContent').value = note.content;
+        hiddenId.value = note.id;
+        modalTitle.textContent = 'Edit Note';
+      }
+    } else {
+      // new note
+      document.getElementById('noteTitle').value = '';
+      document.getElementById('noteContent').value = '';
+      hiddenId.value = '';
+      document.getElementById('noteModalLabel').textContent = 'New Note';
+    }
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function saveNotesToStorage(notes) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  }
+
+  function getNotesFromStorage() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  function createCardElement(note) {
+    const card = document.createElement('div');
+    card.className = 'card my-3';
+    card.dataset.id = note.id;
+    card.innerHTML = `
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 class="card-title">${escapeHtml(note.title)}</h5>
+            <p class="card-text">${escapeHtml(note.content)}</p>
+          </div>
+          <div class="btn-group" role="group" aria-label="note-actions">
+            <button class="btn btn-sm btn-outline-primary btn-edit">Edit</button>
+            <button class="btn btn-sm btn-outline-danger btn-delete">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+    card.querySelector('.btn-delete').addEventListener('click', () => {
+      removeNote(note.id);
+    });
+    card.querySelector('.btn-edit').addEventListener('click', () => {
+      showNoteModal(note.id);
+    });
+    return card;
+  }
+
+  function addNoteToPage(note) {
+    const container = document.getElementById('sectionDetails');
+    container.prepend(createCardElement(note));
+  }
+
+  function updateCardOnPage(note) {
+    const card = document.querySelector(`[data-id="${note.id}"]`);
+    if (!card) return;
+    const titleEl = card.querySelector('.card-title');
+    const contentEl = card.querySelector('.card-text');
+    if (titleEl) titleEl.textContent = note.title;
+    if (contentEl) contentEl.textContent = note.content;
+  }
+
+  function removeNote(id) {
+    let notes = getNotesFromStorage();
+    notes = notes.filter(n => n.id !== id);
+    saveNotesToStorage(notes);
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (card) card.remove();
+  }
+
+  document.getElementById('noteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
+    if (!title && !content) return;
+
+    const editingId = document.getElementById('noteId').value;
+    if (editingId) {
+      // update existing
+      let notes = getNotesFromStorage();
+      notes = notes.map(n => n.id === editingId ? { ...n, title, content } : n);
+      saveNotesToStorage(notes);
+      updateCardOnPage({ id: editingId, title, content });
+    } else {
+      const note = { id: Date.now().toString(), title, content };
+      const notes = getNotesFromStorage();
+      notes.unshift(note);
+      saveNotesToStorage(notes);
+      addNoteToPage(note);
+    }
+
+    // hide modal
+    const modalEl = document.getElementById('noteModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    // clear inputs
+    document.getElementById('noteId').value = '';
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    document.getElementById('noteModalLabel').textContent = 'New Note';
+  });
+
+  // search/filter notes
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    const q = (e.target.value || '').toLowerCase();
+    const cards = document.querySelectorAll('#sectionDetails .card');
+    cards.forEach(card => {
+      const title = (card.querySelector('.card-title')?.textContent || '').toLowerCase();
+      const content = (card.querySelector('.card-text')?.textContent || '').toLowerCase();
+      const matches = title.includes(q) || content.includes(q);
+      card.style.display = matches ? '' : 'none';
+    });
+  });
+
+  // load saved notes on startup
+  document.addEventListener('DOMContentLoaded', function() {
+    const notes = getNotesFromStorage();
+    notes.forEach(addNoteToPage);
+  });
+
+  // export notes as JSON file
+  function exportNotes() {
+    const notes = getNotesFromStorage();
+    if (!notes || notes.length === 0) {
+      alert('No notes to export.');
+      return;
+    }
+    const dataStr = JSON.stringify(notes, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    a.href = url;
+    a.download = `notes-${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+</script>

@@ -1,0 +1,44 @@
+.bg-container {
+     background-image: linear-gradient(to right top, #8e44ad 0%, #3498db 100%);
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+}
+
+.top {
+padding: 25px;
+
+}
+
+.middle{
+  padding: 25px;
+}
+
+.click {
+    background-color: hsl(239, 85%, 48%);
+    color: white;
+    padding: 10px;
+    margin: 10px;
+    width: 115px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+}
+
+.inserting {
+    background-color: #f0aea5;
+    height: 350px;
+    color: white;
+    padding: 10px;
+    margin: 10px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+}
+
+.heading {
+    padding-left: 350px;
+    margin-top: 200px;
+  
+}
+
